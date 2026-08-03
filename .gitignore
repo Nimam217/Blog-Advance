@@ -1,0 +1,10 @@
+.env
+.env.prod
+__pycache__/
+*.pyc
+db.sqlite3
+static/
+media/
+postgres_data/
+.idea/
+venv/
