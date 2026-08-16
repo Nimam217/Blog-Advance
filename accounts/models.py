@@ -1,3 +1,5 @@
+import profile
+
 from django.db import models
 from django.contrib.auth.models import (AbstractBaseUser,PermissionsMixin)
 from django.contrib.auth.base_user import BaseUserManager
@@ -54,7 +56,7 @@ class User(AbstractBaseUser,PermissionsMixin):
 
 
 class Profile(models.Model):
-    user = models.OneToOneField(User,on_delete=models.CASCADE)
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
     image = models.ImageField(blank=True, null=True)
     first_name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100)

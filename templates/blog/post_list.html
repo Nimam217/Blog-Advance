@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Post List</title>
+</head>
+<body>
+    {% for post in posts %}
+    <div>
+       <a  href="{% url 'blog:post-detail' post.pk %}"><h2>{{post.title}}</h2></a>
+        <h3>{{post.content}}</h3>
+        <a href="{% url 'blog:post-update' post.pk %}"><h5>Edit</h5></a>
+        <a href="{% url 'blog:post-delete' post.pk %}"><h5>delete</h5></a>
+    </div>
+    {% endfor %}
+<div class="pagination">
+    <span class="step-links">
+        {% if page_obj.has_previous %}
+            <a href="?page=1">&laquo; first</a>
+            <a href="?page={{ page_obj.previous_page_number }}">previous</a>
+        {% endif %}
+
+        <span class="current">
+            Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}.
+        </span>
+
+        {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}">next</a>
+            <a href="?page={{ page_obj.paginator.num_pages }}">last &raquo;</a>
+        {% endif %}
+    </span>
+</div>
+</body>
+</html>
