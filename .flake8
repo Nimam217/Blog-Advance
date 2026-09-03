@@ -12,3 +12,4 @@ exclude =
     __initial__.py
     accounts/migrations
     core/settings.py
+    accounts/apps.py

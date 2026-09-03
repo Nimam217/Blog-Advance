@@ -8,10 +8,10 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 from accounts.models import User, Profile
 
-
 # =========================================================
 # Fixtures
 # =========================================================
+
 
 @pytest.fixture
 def api_client():
@@ -43,6 +43,7 @@ def auth_client(api_client, verified_user):
 # Register
 # =========================================================
 
+
 @pytest.mark.django_db
 class TestRegisterView:
 
@@ -55,26 +56,18 @@ class TestRegisterView:
             "password_confirmation": "@Asdf123",
         }
 
-        url = reverse(
-            "accounts:accounts-api-v1:register"
-        )
+        url = reverse("accounts:accounts-api-v1:register")
 
         response = api_client.post(url, data)
 
         assert response.status_code == 201
         assert response.data["email"] == "newuser@gmail.com"
 
-        user = User.objects.get(
-            email="newuser@gmail.com"
-        )
+        user = User.objects.get(email="newuser@gmail.com")
 
-        assert Profile.objects.filter(
-            user=user
-        ).exists()
+        assert Profile.objects.filter(user=user).exists()
 
-        assert Token.objects.filter(
-            user=user
-        ).exists()
+        assert Token.objects.filter(user=user).exists()
 
         mock_start.assert_called_once()
 
@@ -91,17 +84,13 @@ class TestRegisterView:
             "password_confirmation": "@Different123",
         }
 
-        url = reverse(
-            "accounts:accounts-api-v1:register"
-        )
+        url = reverse("accounts:accounts-api-v1:register")
 
         response = api_client.post(url, data)
 
         assert response.status_code == 400
 
-        assert not User.objects.filter(
-            email="newuser@gmail.com"
-        ).exists()
+        assert not User.objects.filter(email="newuser@gmail.com").exists()
 
         mock_start.assert_not_called()
 
@@ -109,6 +98,7 @@ class TestRegisterView:
 # =========================================================
 # Custom Auth Token
 # =========================================================
+
 
 @pytest.mark.django_db
 class TestCustomAuthToken:
@@ -124,9 +114,7 @@ class TestCustomAuthToken:
             "password": "@Asdf123",
         }
 
-        url = reverse(
-            "accounts:accounts-api-v1:login-token"
-        )
+        url = reverse("accounts:accounts-api-v1:login-token")
 
         response = api_client.post(url, data)
 
@@ -150,9 +138,7 @@ class TestCustomAuthToken:
             "password": "@Asdf123",
         }
 
-        url = reverse(
-            "accounts:accounts-api-v1:login-token"
-        )
+        url = reverse("accounts:accounts-api-v1:login-token")
 
         response = api_client.post(url, data)
 
@@ -169,9 +155,7 @@ class TestCustomAuthToken:
             "password": "wrong-password",
         }
 
-        url = reverse(
-            "accounts:accounts-api-v1:login-token"
-        )
+        url = reverse("accounts:accounts-api-v1:login-token")
 
         response = api_client.post(url, data)
 
@@ -182,6 +166,7 @@ class TestCustomAuthToken:
 # Destroy Token / Logout
 # =========================================================
 
+
 @pytest.mark.django_db
 class TestCustomDiscardAuthToken:
 
@@ -191,34 +176,24 @@ class TestCustomDiscardAuthToken:
         verified_user,
     ):
 
-        token = Token.objects.get(
-            user=verified_user
-        )
+        token = Token.objects.get(user=verified_user)
 
-        api_client.credentials(
-            HTTP_AUTHORIZATION=f"Token {token.key}"
-        )
+        api_client.credentials(HTTP_AUTHORIZATION=f"Token {token.key}")
 
-        url = reverse(
-            "accounts:accounts-api-v1:destroy-token"
-        )
+        url = reverse("accounts:accounts-api-v1:destroy-token")
 
         response = api_client.post(url)
 
         assert response.status_code == 204
 
-        assert not Token.objects.filter(
-            user=verified_user
-        ).exists()
+        assert not Token.objects.filter(user=verified_user).exists()
 
     def test_logout_unauthenticated(
         self,
         api_client,
     ):
 
-        url = reverse(
-            "accounts:accounts-api-v1:destroy-token"
-        )
+        url = reverse("accounts:accounts-api-v1:destroy-token")
 
         response = api_client.post(url)
 
@@ -228,6 +203,7 @@ class TestCustomDiscardAuthToken:
 # =========================================================
 # JWT
 # =========================================================
+
 
 @pytest.mark.django_db
 class TestCustomJwtTokenObtainPairView:
@@ -243,9 +219,7 @@ class TestCustomJwtTokenObtainPairView:
             "password": "@Asdf123",
         }
 
-        url = reverse(
-            "accounts:accounts-api-v1:token_obtain_pair"
-        )
+        url = reverse("accounts:accounts-api-v1:token_obtain_pair")
 
         response = api_client.post(url, data)
 
@@ -255,13 +229,9 @@ class TestCustomJwtTokenObtainPairView:
         assert "refresh" in response.data
         assert "user" in response.data
 
-        assert response.data["user"]["id"] == (
-            verified_user.id
-        )
+        assert response.data["user"]["id"] == (verified_user.id)
 
-        assert response.data["user"]["email"] == (
-            verified_user.email
-        )
+        assert response.data["user"]["email"] == (verified_user.email)
 
     def test_jwt_login_unverified_user(
         self,
@@ -274,9 +244,7 @@ class TestCustomJwtTokenObtainPairView:
             "password": "@Asdf123",
         }
 
-        url = reverse(
-            "accounts:accounts-api-v1:token_obtain_pair"
-        )
+        url = reverse("accounts:accounts-api-v1:token_obtain_pair")
 
         response = api_client.post(url, data)
 
@@ -293,18 +261,16 @@ class TestCustomJwtTokenObtainPairView:
             "password": "wrong-password",
         }
 
-        url = reverse(
-            "accounts:accounts-api-v1:token_obtain_pair"
-        )
+        url = reverse("accounts:accounts-api-v1:token_obtain_pair")
 
         response = api_client.post(url, data)
 
         assert response.status_code == 401
 
     def test_jwt_refresh_successfully(
-            self,
-            api_client,
-            verified_user,
+        self,
+        api_client,
+        verified_user,
     ):
         refresh = RefreshToken.for_user(verified_user)
 
@@ -312,9 +278,7 @@ class TestCustomJwtTokenObtainPairView:
             "refresh": str(refresh),
         }
 
-        url = reverse(
-            "accounts:accounts-api-v1:token_refresh"
-        )
+        url = reverse("accounts:accounts-api-v1:token_refresh")
 
         response = api_client.post(url, data)
 
@@ -326,9 +290,7 @@ class TestCustomJwtTokenObtainPairView:
             "refresh": "invalid-refresh-token",
         }
 
-        url = reverse(
-            "accounts:accounts-api-v1:token_refresh"
-        )
+        url = reverse("accounts:accounts-api-v1:token_refresh")
 
         response = api_client.post(url, data)
 
@@ -338,35 +300,25 @@ class TestCustomJwtTokenObtainPairView:
         refresh = RefreshToken.for_user(verified_user)
         access_token = str(refresh.access_token)
 
-        data = {
-            "token": access_token
-        }
+        data = {"token": access_token}
 
-        url = reverse(
-            "accounts:accounts-api-v1:token_verify"
-        )
+        url = reverse("accounts:accounts-api-v1:token_verify")
 
         response = api_client.post(url, data)
 
         assert response.status_code == 200
 
     def test_jwt_verify_with_invalid_token(self, api_client):
-        data = {
-            "token": "invalid-token"
-        }
+        data = {"token": "invalid-token"}
 
-        url = reverse(
-            "accounts:accounts-api-v1:token_verify"
-        )
+        url = reverse("accounts:accounts-api-v1:token_verify")
 
         response = api_client.post(url, data)
 
         assert response.status_code in [400, 401]
 
     def test_jwt_verify_without_token(self, api_client):
-        url = reverse(
-            "accounts:accounts-api-v1:token_verify"
-        )
+        url = reverse("accounts:accounts-api-v1:token_verify")
 
         response = api_client.post(url, {})
 
@@ -376,6 +328,7 @@ class TestCustomJwtTokenObtainPairView:
 # =========================================================
 # Change Password
 # =========================================================
+
 
 @pytest.mark.django_db
 class TestChangePasswordView:
@@ -392,9 +345,7 @@ class TestChangePasswordView:
             "new_password_confirmation": "@NewPassword123",
         }
 
-        url = reverse(
-            "accounts:accounts-api-v1:change_password"
-        )
+        url = reverse("accounts:accounts-api-v1:change_password")
 
         response = auth_client.put(url, data)
 
@@ -405,9 +356,7 @@ class TestChangePasswordView:
 
         verified_user.refresh_from_db()
 
-        assert verified_user.check_password(
-            "@NewPassword123"
-        )
+        assert verified_user.check_password("@NewPassword123")
 
     def test_change_password_wrong_old_password(
         self,
@@ -420,9 +369,7 @@ class TestChangePasswordView:
             "new_password_confirmation": "@NewPassword123",
         }
 
-        url = reverse(
-            "accounts:accounts-api-v1:change_password"
-        )
+        url = reverse("accounts:accounts-api-v1:change_password")
 
         response = auth_client.put(url, data)
 
@@ -440,9 +387,7 @@ class TestChangePasswordView:
             "new_password_confirmation": "@Different123",
         }
 
-        url = reverse(
-            "accounts:accounts-api-v1:change_password"
-        )
+        url = reverse("accounts:accounts-api-v1:change_password")
 
         response = auth_client.put(url, data)
 
@@ -459,9 +404,7 @@ class TestChangePasswordView:
             "new_password_confirmation": "@NewPassword123",
         }
 
-        url = reverse(
-            "accounts:accounts-api-v1:change_password"
-        )
+        url = reverse("accounts:accounts-api-v1:change_password")
 
         response = api_client.put(url, data)
 
@@ -472,6 +415,7 @@ class TestChangePasswordView:
 # Profile
 # =========================================================
 
+
 @pytest.mark.django_db
 class TestProfileView:
 
@@ -481,9 +425,7 @@ class TestProfileView:
         verified_user,
     ):
 
-        url = reverse(
-            "accounts:accounts-api-v1:profile"
-        )
+        url = reverse("accounts:accounts-api-v1:profile")
 
         response = auth_client.get(url)
 
@@ -502,17 +444,13 @@ class TestProfileView:
             "description": "My description",
         }
 
-        url = reverse(
-            "accounts:accounts-api-v1:profile"
-        )
+        url = reverse("accounts:accounts-api-v1:profile")
 
         response = auth_client.patch(url, data)
 
         assert response.status_code == 200
 
-        profile = Profile.objects.get(
-            user=verified_user
-        )
+        profile = Profile.objects.get(user=verified_user)
 
         assert profile.first_name == "Nima"
         assert profile.last_name == "Aghahadi"
@@ -526,9 +464,7 @@ class TestProfileView:
 
         api_client.force_authenticate(user=user)
 
-        url = reverse(
-            "accounts:accounts-api-v1:profile"
-        )
+        url = reverse("accounts:accounts-api-v1:profile")
 
         response = api_client.get(url)
 
@@ -539,9 +475,7 @@ class TestProfileView:
         api_client,
     ):
 
-        url = reverse(
-            "accounts:accounts-api-v1:profile"
-        )
+        url = reverse("accounts:accounts-api-v1:profile")
 
         response = api_client.get(url)
 
@@ -551,6 +485,7 @@ class TestProfileView:
 # =========================================================
 # Activation
 # =========================================================
+
 
 @pytest.mark.django_db
 class TestActivationView:
@@ -573,9 +508,7 @@ class TestActivationView:
 
         assert response.status_code == 200
 
-        assert response.data["detail"] == (
-            "successfully activated"
-        )
+        assert response.data["detail"] == ("successfully activated")
 
         user.refresh_from_db()
 
@@ -587,9 +520,7 @@ class TestActivationView:
         verified_user,
     ):
 
-        refresh = RefreshToken.for_user(
-            verified_user
-        )
+        refresh = RefreshToken.for_user(verified_user)
 
         token = str(refresh.access_token)
 
@@ -602,9 +533,7 @@ class TestActivationView:
 
         assert response.status_code == 400
 
-        assert response.data["detail"] == (
-            "user have been already verified"
-        )
+        assert response.data["detail"] == ("user have been already verified")
 
     def test_activation_invalid_token(
         self,
@@ -620,14 +549,13 @@ class TestActivationView:
 
         assert response.status_code == 400
 
-        assert response.data["detail"] == (
-            "invalid token"
-        )
+        assert response.data["detail"] == ("invalid token")
 
 
 # =========================================================
 # Resend Activation Email
 # =========================================================
+
 
 @pytest.mark.django_db
 class TestResendActivationEmail:
@@ -644,17 +572,13 @@ class TestResendActivationEmail:
             "email": user.email,
         }
 
-        url = reverse(
-            "accounts:accounts-api-v1:resend_activation"
-        )
+        url = reverse("accounts:accounts-api-v1:resend_activation")
 
         response = api_client.post(url, data)
 
         assert response.status_code == 200
 
-        assert response.data["detail"] == (
-            "email has been sent successfully"
-        )
+        assert response.data["detail"] == ("email has been sent successfully")
 
         mock_start.assert_called_once()
 
@@ -667,9 +591,7 @@ class TestResendActivationEmail:
             "email": "doesnotexist@gmail.com",
         }
 
-        url = reverse(
-            "accounts:accounts-api-v1:resend_activation"
-        )
+        url = reverse("accounts:accounts-api-v1:resend_activation")
 
         response = api_client.post(url, data)
 
@@ -679,6 +601,7 @@ class TestResendActivationEmail:
 # =========================================================
 # Reset Password Email
 # =========================================================
+
 
 @pytest.mark.django_db
 class TestResetPasswordEmail:
@@ -695,17 +618,13 @@ class TestResetPasswordEmail:
             "email": verified_user.email,
         }
 
-        url = reverse(
-            "accounts:accounts-api-v1:reset_password_email"
-        )
+        url = reverse("accounts:accounts-api-v1:reset_password_email")
 
         response = api_client.post(url, data)
 
         assert response.status_code == 200
 
-        assert response.data["detail"] == (
-            "email has been sent successfully"
-        )
+        assert response.data["detail"] == ("email has been sent successfully")
 
         mock_start.assert_called_once()
 
@@ -719,9 +638,7 @@ class TestResetPasswordEmail:
             "email": user.email,
         }
 
-        url = reverse(
-            "accounts:accounts-api-v1:reset_password_email"
-        )
+        url = reverse("accounts:accounts-api-v1:reset_password_email")
 
         response = api_client.post(url, data)
 
@@ -736,9 +653,7 @@ class TestResetPasswordEmail:
             "email": "doesnotexist@gmail.com",
         }
 
-        url = reverse(
-            "accounts:accounts-api-v1:reset_password_email"
-        )
+        url = reverse("accounts:accounts-api-v1:reset_password_email")
 
         response = api_client.post(url, data)
 
@@ -749,6 +664,7 @@ class TestResetPasswordEmail:
 # Reset Password Confirm
 # =========================================================
 
+
 @pytest.mark.django_db
 class TestResetPasswordView:
 
@@ -758,9 +674,7 @@ class TestResetPasswordView:
         verified_user,
     ):
 
-        refresh = RefreshToken.for_user(
-            verified_user
-        )
+        refresh = RefreshToken.for_user(verified_user)
 
         token = str(refresh.access_token)
 
@@ -784,9 +698,7 @@ class TestResetPasswordView:
 
         verified_user.refresh_from_db()
 
-        assert verified_user.check_password(
-            "@NewPassword123"
-        )
+        assert verified_user.check_password("@NewPassword123")
 
     def test_reset_password_password_mismatch(
         self,
@@ -794,9 +706,7 @@ class TestResetPasswordView:
         verified_user,
     ):
 
-        refresh = RefreshToken.for_user(
-            verified_user
-        )
+        refresh = RefreshToken.for_user(verified_user)
 
         token = str(refresh.access_token)
 

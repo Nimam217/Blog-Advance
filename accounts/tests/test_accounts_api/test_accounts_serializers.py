@@ -39,6 +39,7 @@ def request_factory():
 # RegisterViewSerializer
 # =========================================================
 
+
 @pytest.mark.django_db
 class TestRegisterViewSerializer:
 
@@ -120,6 +121,7 @@ class TestRegisterViewSerializer:
 # =========================================================
 # CustomAuthTokenSerializer
 # =========================================================
+
 
 @pytest.mark.django_db
 class TestCustomAuthTokenSerializer:
@@ -246,6 +248,7 @@ class TestCustomAuthTokenSerializer:
 # CustomJwtTokenPairViewSerializer
 # =========================================================
 
+
 @pytest.mark.django_db
 class TestCustomJwtTokenPairViewSerializer:
 
@@ -264,7 +267,9 @@ class TestCustomJwtTokenPairViewSerializer:
         assert "user" in serializer.validated_data
 
         assert serializer.validated_data["user"]["id"] == verified_user.id
-        assert serializer.validated_data["user"]["email"] == verified_user.email
+        assert (
+            serializer.validated_data["user"]["email"] == verified_user.email
+        )
 
     def test_unverified_user(self, user):
         data = {
@@ -292,6 +297,7 @@ class TestCustomJwtTokenPairViewSerializer:
 # =========================================================
 # ChangePasswordSerializer
 # =========================================================
+
 
 @pytest.mark.django_db
 class TestChangePasswordSerializer:
@@ -383,6 +389,7 @@ class TestChangePasswordSerializer:
 # ProfileSerializer
 # =========================================================
 
+
 @pytest.mark.django_db
 class TestProfileSerializer:
 
@@ -437,6 +444,7 @@ class TestProfileSerializer:
 # ResendActivationSerializer
 # =========================================================
 
+
 @pytest.mark.django_db
 class TestResendActivationSerializer:
 
@@ -471,6 +479,7 @@ class TestResendActivationSerializer:
 # ResetPasswordEmaiSerializer
 # =========================================================
 
+
 @pytest.mark.django_db
 class TestResetPasswordEmaiSerializer:
 
@@ -504,6 +513,7 @@ class TestResetPasswordEmaiSerializer:
 # =========================================================
 # ResetPasswordViewSerializer
 # =========================================================
+
 
 @pytest.mark.django_db
 class TestResetPasswordViewSerializer:

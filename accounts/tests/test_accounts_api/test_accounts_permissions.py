@@ -21,7 +21,6 @@ def unverified_user(db):
     )
 
 
-
 class TestIsOwnerAndIsVerified:
 
     def test_authenticated_and_verified_user_has_permission(
