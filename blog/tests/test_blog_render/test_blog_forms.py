@@ -1,4 +1,4 @@
-'''from django.test import TestCase, Client
+from django.test import TestCase, Client
 from ...forms import PostForm
 from accounts.models import Profile, User
 from ...models import Category
@@ -37,4 +37,3 @@ class TestBlogForm(TestCase):
         form = PostForm(data=form_data)
         self.assertFalse(form.is_valid())
         self.assertIn("title", form.errors)
-'''

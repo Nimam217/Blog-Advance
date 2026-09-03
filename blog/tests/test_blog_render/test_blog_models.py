@@ -1,4 +1,4 @@
-'''from django.test import TestCase
+from django.test import TestCase
 
 from accounts.models import User, Profile
 from blog.models import Post, Category
@@ -29,4 +29,3 @@ class TestBlogModels(TestCase):
     def test_category_model(self):
         category = Category.objects.create(name="test")
         self.assertTrue(isinstance(category, Category))
-'''

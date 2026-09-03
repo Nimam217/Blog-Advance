@@ -1,4 +1,4 @@
-'''from django.test import TestCase
+from django.test import TestCase
 from django.urls import resolve, reverse
 
 from blog.views import (
@@ -31,4 +31,3 @@ class TestBlogUrls(TestCase):
     def test_post_update_resolve(self):
         url = reverse("blog:post-update", kwargs={"pk": 1})
         self.assertEqual(resolve(url).func.view_class, PostUpdateView)
-'''

@@ -1,4 +1,4 @@
-'''from django.test import TestCase, Client
+from django.test import TestCase, Client
 from accounts.models import Profile, User
 from django.urls import reverse
 
@@ -153,4 +153,3 @@ class TestBlogView(TestCase):
         self.assertRedirects(
             response, f"{reverse('accounts:login')}?next={url}"
         )
-'''
