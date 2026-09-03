@@ -7,4 +7,6 @@ static/
 media/
 postgres_data/
 .idea/
+.venv/
+.bin
 venv/
