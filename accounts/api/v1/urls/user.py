@@ -8,7 +8,7 @@ from ..views import (
     ChangePasswordView,
     ActivationView,
     ResendActivationEmail,
-    ResetPasswordEmai,
+    ResetPasswordEmail,
     ResetPasswordView,
 )
 from rest_framework_simplejwt.views import (
@@ -28,7 +28,7 @@ urlpatterns = [
     # Reset Password
     path(
         "reset_password/",
-        ResetPasswordEmai.as_view(),
+        ResetPasswordEmail.as_view(),
         name="reset_password_email",
     ),
     path(

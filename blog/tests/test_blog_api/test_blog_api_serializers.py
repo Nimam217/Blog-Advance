@@ -1,256 +1,364 @@
 import pytest
-
 from rest_framework.test import APIRequestFactory
 
 from accounts.models import Profile, User
-from blog.models import Category, Post
-from blog.api.v1.serializers import PostSerializer
+from blog.api.v1.serializers import (
+    CategorySerializer,
+    CommentSerializer,
+    PostSerializer,
+)
+from blog.models import Category, Comment, Post
 
 
 @pytest.fixture
-def serializer_user(db):
+def user(db):
     return User.objects.create_user(
-        email="serializer@gmail.com",
-        password="@Asdf123",
+        email="test@gmail.com",
+        password="testpassword123",
     )
 
 
 @pytest.fixture
-def serializer_profile(serializer_user):
-    return Profile.objects.get(user=serializer_user)
-
-
-@pytest.fixture
-def serializer_category(db):
-    return Category.objects.create(
-        name="serializer category",
+def another_user(db):
+    return User.objects.create_user(
+        email="another@gmail.com",
+        password="testpassword123",
     )
 
 
 @pytest.fixture
-def serializer_post(
-    serializer_profile,
-    serializer_category,
-):
+def profile(user):
+    return Profile.objects.get(user=user)
+
+
+@pytest.fixture
+def another_profile(another_user):
+    return Profile.objects.get(user=another_user)
+
+
+@pytest.fixture
+def category(db):
+    return Category.objects.create(name="Django")
+
+
+@pytest.fixture
+def another_category(db):
+    return Category.objects.create(name="Python")
+
+
+@pytest.fixture
+def post(profile, category):
     return Post.objects.create(
-        title="serializer post",
-        content="serializer content",
-        author=serializer_profile,
-        category=serializer_category,
+        title="Test Post",
+        content="This is test content",
+        author=profile,
+        category=category,
         status=True,
     )
 
 
 @pytest.fixture
-def request_factory():
-    return APIRequestFactory()
+def another_post(another_profile, another_category):
+    return Post.objects.create(
+        title="Another Post",
+        content="Another test content",
+        author=another_profile,
+        category=another_category,
+        status=True,
+    )
+
+
+@pytest.fixture
+def comment(profile, post):
+    return Comment.objects.create(
+        name="Test User",
+        content="Test comment",
+        author=profile,
+        post=post,
+    )
+
+
+@pytest.fixture
+def reply(another_profile, post, comment):
+    return Comment.objects.create(
+        name="Another User",
+        content="Test reply",
+        author=another_profile,
+        post=post,
+        parent=comment,
+    )
+
+
+@pytest.fixture
+def api_request():
+    factory = APIRequestFactory()
+    request = factory.get("/blog/api/v1/post/")
+    return request
+
+
+@pytest.mark.django_db
+class TestCategorySerializer:
+
+    def test_category_serializer(self, category):
+        serializer = CategorySerializer(category)
+
+        assert serializer.data == {
+            "id": category.id,
+            "name": "Django",
+        }
 
 
 @pytest.mark.django_db
 class TestPostSerializer:
 
-    # --------------------------------
-    # Expected fields
-    # --------------------------------
-
-    def test_serializer_contains_expected_fields(
-        self,
-        request_factory,
-        serializer_post,
-    ):
-        request = request_factory.get("/api/v1/posts/")
-
-        request.parser_context = {"kwargs": {}}
+    def test_post_serializer_list(self, post, api_request):
+        api_request.parser_context = {"kwargs": {}}
 
         serializer = PostSerializer(
-            serializer_post,
-            context={
-                "request": request,
-            },
+            post,
+            context={"request": api_request},
         )
 
         data = serializer.data
 
-        assert "id" in data
-        assert "post_url" in data
-        assert "image" in data
-        assert "title" in data
-        assert "snippest" in data
-        assert "author" in data
-        assert "category" in data
-        assert "status" in data
-        assert "created_at" in data
-
-    # --------------------------------
-    # List representation
-    # --------------------------------
-
-    def test_list_representation(
-        self,
-        request_factory,
-        serializer_post,
-    ):
-        request = request_factory.get("/api/v1/posts/")
-
-        request.parser_context = {"kwargs": {}}
-
-        serializer = PostSerializer(
-            serializer_post,
-            context={
-                "request": request,
-            },
-        )
-
-        data = serializer.data
+        assert data["id"] == post.id
+        assert data["title"] == "Test Post"
+        assert data["author"] == post.author.id
+        assert data["category"] == {
+            "id": post.category.id,
+            "name": "Django",
+        }
 
         assert "content" not in data
+        assert "comments" not in data
+
         assert "snippest" in data
         assert "post_url" in data
 
-    # --------------------------------
-    # Detail representation
-    # --------------------------------
-
-    def test_detail_representation(
-        self,
-        request_factory,
-        serializer_post,
-    ):
-        request = request_factory.get(f"/api/v1/posts/{serializer_post.pk}/")
-
-        request.parser_context = {
+    def test_post_serializer_detail(self, post, api_request):
+        api_request.parser_context = {
             "kwargs": {
-                "pk": serializer_post.pk,
+                "pk": post.id,
             }
         }
 
         serializer = PostSerializer(
-            serializer_post,
-            context={
-                "request": request,
-            },
+            post,
+            context={"request": api_request},
         )
 
         data = serializer.data
 
+        assert data["id"] == post.id
+        assert data["title"] == "Test Post"
+        assert data["content"] == "This is test content"
+
+        assert data["category"] == {
+            "id": post.category.id,
+            "name": "Django",
+        }
+
         assert "content" in data
+        assert "comments" in data
+
         assert "snippest" not in data
         assert "post_url" not in data
 
-    # --------------------------------
-    # Nested category
-    # --------------------------------
+    def test_post_serializer_category(self, post, api_request):
+        api_request.parser_context = {"kwargs": {}}
 
-    def test_category_is_nested(
-        self,
-        request_factory,
-        serializer_post,
-    ):
-        request = request_factory.get(f"/api/v1/posts/{serializer_post.pk}/")
+        serializer = PostSerializer(
+            post,
+            context={"request": api_request},
+        )
 
-        request.parser_context = {
+        assert serializer.data["category"] == {
+            "id": post.category.id,
+            "name": "Django",
+        }
+
+    def test_post_serializer_comments(self, post, comment, api_request):
+        api_request.parser_context = {
             "kwargs": {
-                "pk": serializer_post.pk,
+                "pk": post.id,
             }
         }
 
         serializer = PostSerializer(
-            serializer_post,
-            context={
-                "request": request,
-            },
+            post,
+            context={"request": api_request},
+        )
+
+        assert serializer.data["comments"] == [
+            f"http://testserver/blog/api/v1/comment/{comment.id}/"
+        ]
+
+    def test_post_serializer_create(
+        self,
+        user,
+        profile,
+        category,
+        api_request,
+    ):
+        api_request.user = user
+        api_request.parser_context = {"kwargs": {}}
+
+        data = {
+            "title": "New Post",
+            "content": "New post content",
+            "category": category.id,
+            "status": True,
+        }
+
+        serializer = PostSerializer(
+            data=data,
+            context={"request": api_request},
+        )
+
+        assert serializer.is_valid(), serializer.errors
+
+        post = serializer.save()
+
+        assert post.title == "New Post"
+        assert post.content == "New post content"
+        assert post.category == category
+        assert post.author == profile
+
+
+@pytest.mark.django_db
+class TestCommentSerializer:
+
+    def test_comment_serializer(self, comment, api_request):
+        serializer = CommentSerializer(
+            comment,
+            context={"request": api_request},
         )
 
         data = serializer.data
 
-        assert isinstance(
-            data["category"],
-            dict,
+        assert data["id"] == comment.id
+        assert data["content"] == "Test comment"
+        assert data["author"] == comment.author.id
+        assert data["post"] == comment.post.id
+        assert data["parent"] is None
+
+        assert data["comment_parent_url"] is None
+
+    def test_comment_serializer_parent(
+        self,
+        comment,
+        reply,
+        api_request,
+    ):
+        serializer = CommentSerializer(
+            reply,
+            context={"request": api_request},
         )
 
-        assert data["category"]["id"] == (serializer_post.category.pk)
+        data = serializer.data
 
-        assert data["category"]["name"] == (serializer_post.category.name)
+        assert data["parent"] == comment.id
 
-    # --------------------------------
-    # Author is read only
-    # --------------------------------
-
-    def test_author_is_read_only(
-        self,
-        serializer_post,
-    ):
-        serializer = PostSerializer(serializer_post)
-
-        assert "author" in serializer.fields
-
-        assert serializer.fields["author"].read_only is True
-
-    # --------------------------------
-    # Create
-    # --------------------------------
-
-    def test_create_sets_author_automatically(
-        self,
-        request_factory,
-        serializer_user,
-        serializer_category,
-    ):
-        request = request_factory.post("/api/v1/posts/")
-
-        request.user = serializer_user
-
-        request.parser_context = {"kwargs": {}}
-
-        data = {
-            "title": "created post",
-            "content": "created content",
-            "category": serializer_category.pk,
-            "status": True,
-        }
-
-        serializer = PostSerializer(
-            data=data,
-            context={
-                "request": request,
-            },
+        assert (
+            data["comment_parent_url"]
+            == f"http://testserver/blog/api/v1/comment/{comment.id}/"
         )
 
-        assert serializer.is_valid()
-
-        post = serializer.save()
-
-        profile = Profile.objects.get(user=serializer_user)
-
-        assert post.author == profile
-
-    # --------------------------------
-    # Invalid data
-    # --------------------------------
-
-    def test_serializer_invalid_without_title(
+    def test_comment_serializer_children(
         self,
-        request_factory,
-        serializer_user,
+        comment,
+        reply,
+        api_request,
     ):
-        request = request_factory.post("/api/v1/posts/")
+        serializer = CommentSerializer(
+            comment,
+            context={"request": api_request},
+        )
 
-        request.user = serializer_user
+        data = serializer.data
 
-        request.parser_context = {"kwargs": {}}
+        assert data["comment_children_url"] == [
+            f"http://testserver/blog/api/v1/comment/{reply.id}/"
+        ]
+
+    def test_comment_serializer_create(
+        self,
+        user,
+        profile,
+        post,
+        api_request,
+    ):
+        api_request.user = user
 
         data = {
-            "content": "content without title",
-            "status": True,
+            "content": "New comment",
+            "post": post.id,
         }
 
-        serializer = PostSerializer(
+        serializer = CommentSerializer(
             data=data,
-            context={
-                "request": request,
-            },
+            context={"request": api_request},
+        )
+
+        assert serializer.is_valid(), serializer.errors
+
+        comment = serializer.save()
+
+        assert comment.content == "New comment"
+        assert comment.post == post
+        assert comment.author == profile
+        assert comment.name == profile.get_full_name()
+
+    def test_comment_serializer_invalid_parent_post(
+        self,
+        post,
+        another_post,
+        comment,
+        api_request,
+    ):
+        data = {
+            "content": "Invalid reply",
+            "post": another_post.id,
+            "parent": comment.id,
+        }
+
+        serializer = CommentSerializer(
+            data=data,
+            context={"request": api_request},
         )
 
         assert serializer.is_valid() is False
+        assert "parent" in serializer.errors
+        assert (
+            serializer.errors["parent"][0]
+            == "Parent comment must belong to the same post."
+        )
 
-        assert "title" in serializer.errors
+    def test_comment_serializer_read_only_fields(
+        self,
+        comment,
+        api_request,
+    ):
+        data = {
+            "name": "Changed Name",
+            "author": comment.author.id,
+            "created_at": comment.created_at,
+            "updated_at": comment.updated_at,
+            "content": "Updated content",
+            "post": comment.post.id,
+        }
+
+        serializer = CommentSerializer(
+            comment,
+            data=data,
+            context={"request": api_request},
+            partial=True,
+        )
+
+        assert serializer.is_valid(), serializer.errors
+
+        updated_comment = serializer.save()
+
+        assert updated_comment.name == comment.name
+        assert updated_comment.author == comment.author
+        assert updated_comment.content == "Updated content"
