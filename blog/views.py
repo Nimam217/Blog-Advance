@@ -1,8 +1,9 @@
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.db.models import Prefetch
 from django.shortcuts import render, get_object_or_404, redirect
-
-from accounts.models import Profile
-from django.urls import reverse_lazy
+from django.utils.decorators import method_decorator
+from django.views.decorators.cache import cache_page
+from django.urls import reverse_lazy, reverse
 from django.views.generic import (
     ListView,
     CreateView,
@@ -11,36 +12,48 @@ from django.views.generic import (
 )
 from django.views import View
 
+from accounts.models import Profile
 from blog.models import Post, Comment
 from .forms import PostForm, CommentForm
-from django.urls import reverse
-
-# Create your views here.
 
 
+# Post List
+@method_decorator(cache_page(20 * 60), name="dispatch")
 class PostListView(ListView):
     context_object_name = "posts"
-    template_name = "post_list.html"
+    template_name = "blog/post_list.html"
     paginate_by = 2
 
     def get_queryset(self):
         return Post.objects.filter(
-            status="True",
+            status=True,
         ).order_by("created_at")
 
 
+# Post Detail + Comments
 class PostDetailView(LoginRequiredMixin, View):
     template_name = "blog/post_detail.html"
     form_class = CommentForm
 
+    def get_comments(self, post):
+        return (
+            post.comments.filter(parent=None, status=True)
+            .select_related("author")
+            .prefetch_related(
+                Prefetch(
+                    "replies",
+                    queryset=Comment.objects.select_related("author").order_by(
+                        "created_at"
+                    ),
+                )
+            )
+            .order_by("created_at")
+        )
+
     def get(self, request, pk, *args, **kwargs):
         post = get_object_or_404(Post, pk=pk)
 
-        comments = (
-            post.comments.select_related("author")
-            .filter(parent=None)
-            .order_by("created_at")
-        )
+        comments = self.get_comments(post)
 
         form = self.form_class()
 
@@ -59,7 +72,7 @@ class PostDetailView(LoginRequiredMixin, View):
 
         action = request.POST.get("action")
 
-        # CREATE / REPLY
+        # CREATE COMMENT / REPLY
         if action == "create":
             form = self.form_class(request.POST)
 
@@ -77,6 +90,7 @@ class PostDetailView(LoginRequiredMixin, View):
                         Comment,
                         pk=parent_id,
                         post=post,
+                        parent=None,
                     )
 
                 comment.save()
@@ -95,6 +109,7 @@ class PostDetailView(LoginRequiredMixin, View):
                 pk=request.POST.get("comment_id"),
                 author=request.user.profile,
                 post=post,
+                status=True,
             )
 
             form = self.form_class(
@@ -119,6 +134,7 @@ class PostDetailView(LoginRequiredMixin, View):
                 pk=request.POST.get("comment_id"),
                 author=request.user.profile,
                 post=post,
+                status=True,
             )
 
             comment.delete()
@@ -130,11 +146,7 @@ class PostDetailView(LoginRequiredMixin, View):
                 )
             )
 
-        comments = (
-            post.comments.select_related("author")
-            .filter(parent=None)
-            .order_by("created_at")
-        )
+        comments = self.get_comments(post)
 
         return render(
             request,
@@ -147,19 +159,21 @@ class PostDetailView(LoginRequiredMixin, View):
         )
 
 
+# Post Create
 class PostCreateView(LoginRequiredMixin, CreateView):
     template_name = "blog/post_create.html"
     model = Post
-
     form_class = PostForm
     success_url = reverse_lazy("blog:post-list")
 
     def form_valid(self, form):
         profile = Profile.objects.get(user=self.request.user)
         form.instance.author = profile
+
         return super().form_valid(form)
 
 
+# Post Update
 class PostUpdateView(LoginRequiredMixin, UpdateView):
     model = Post
     fields = ["title", "content", "category"]
@@ -167,6 +181,7 @@ class PostUpdateView(LoginRequiredMixin, UpdateView):
     success_url = reverse_lazy("blog:post-list")
 
 
+# Post Delete
 class PostDeleteView(LoginRequiredMixin, DeleteView):
     model = Post
     success_url = reverse_lazy("blog:post-list")

@@ -1,11 +1,13 @@
 from django.test import TestCase, Client
 from django.urls import reverse
-
+from django.core.cache import cache
 from accounts.models import Profile, User
 from ...models import Category, Post, Comment
 
 
 class TestBlogView(TestCase):
+    def setUp(self):
+        cache.clear()
 
     @classmethod
     def setUpTestData(cls):
@@ -50,6 +52,7 @@ class TestBlogView(TestCase):
             content="test comment",
             author=cls.profile,
             post=cls.post,
+            status=True,
         )
 
         cls.reply = Comment.objects.create(
@@ -58,6 +61,7 @@ class TestBlogView(TestCase):
             author=cls.other_profile,
             post=cls.post,
             parent=cls.comment,
+            status=True,
         )
 
     # =========================

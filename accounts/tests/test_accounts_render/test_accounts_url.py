@@ -5,7 +5,7 @@ from django.urls import reverse, resolve
 from accounts.api.v1.views import (
     RegisterView,
     ChangePasswordView,
-    ResetPasswordEmai,
+    ResetPasswordEmail,
     ResetPasswordView,
     CustomAuthToken,
     CustomDiscardAuthToken,
@@ -39,7 +39,7 @@ class TestAccountsURLs:
         url = reverse("accounts:accounts-api-v1:reset_password_email")
 
         assert url == "/accounts/api/v1/reset_password/"
-        assert resolve(url).func.view_class == ResetPasswordEmai
+        assert resolve(url).func.view_class == ResetPasswordEmail
 
     def test_reset_password_confirm_url(self):
         url = reverse(

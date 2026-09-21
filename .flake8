@@ -13,3 +13,4 @@ exclude =
     accounts/migrations
     core/settings.py
     accounts/apps.py
+    blog/apps.py

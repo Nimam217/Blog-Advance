@@ -47,8 +47,14 @@ def auth_client(api_client, verified_user):
 @pytest.mark.django_db
 class TestRegisterView:
 
-    @patch("accounts.api.v1.views.EmailThread.start")
-    def test_register_successfully(self, mock_start, api_client):
+    @patch(
+        "accounts.api.v1.views." "send_email_register_activation.apply_async"
+    )
+    def test_register_successfully(
+        self,
+        mock_start,
+        api_client,
+    ):
 
         data = {
             "email": "newuser@gmail.com",
@@ -71,7 +77,9 @@ class TestRegisterView:
 
         mock_start.assert_called_once()
 
-    @patch("accounts.api.v1.views.EmailThread.start")
+    @patch(
+        "accounts.api.v1.views." "send_email_register_activation.apply_async"
+    )
     def test_register_password_mismatch(
         self,
         mock_start,
@@ -272,6 +280,7 @@ class TestCustomJwtTokenObtainPairView:
         api_client,
         verified_user,
     ):
+
         refresh = RefreshToken.for_user(verified_user)
 
         data = {
@@ -285,7 +294,11 @@ class TestCustomJwtTokenObtainPairView:
         assert response.status_code == 200
         assert "access" in response.data
 
-    def test_jwt_refresh_invalid_token(self, api_client):
+    def test_jwt_refresh_invalid_token(
+        self,
+        api_client,
+    ):
+
         data = {
             "refresh": "invalid-refresh-token",
         }
@@ -296,8 +309,14 @@ class TestCustomJwtTokenObtainPairView:
 
         assert response.status_code == 401
 
-    def test_jwt_verify_successfully(self, api_client, verified_user):
+    def test_jwt_verify_successfully(
+        self,
+        api_client,
+        verified_user,
+    ):
+
         refresh = RefreshToken.for_user(verified_user)
+
         access_token = str(refresh.access_token)
 
         data = {"token": access_token}
@@ -308,7 +327,11 @@ class TestCustomJwtTokenObtainPairView:
 
         assert response.status_code == 200
 
-    def test_jwt_verify_with_invalid_token(self, api_client):
+    def test_jwt_verify_with_invalid_token(
+        self,
+        api_client,
+    ):
+
         data = {"token": "invalid-token"}
 
         url = reverse("accounts:accounts-api-v1:token_verify")
@@ -317,7 +340,11 @@ class TestCustomJwtTokenObtainPairView:
 
         assert response.status_code in [400, 401]
 
-    def test_jwt_verify_without_token(self, api_client):
+    def test_jwt_verify_without_token(
+        self,
+        api_client,
+    ):
+
         url = reverse("accounts:accounts-api-v1:token_verify")
 
         response = api_client.post(url, {})
@@ -497,6 +524,7 @@ class TestActivationView:
     ):
 
         refresh = RefreshToken.for_user(user)
+
         token = str(refresh.access_token)
 
         url = reverse(
@@ -560,42 +588,76 @@ class TestActivationView:
 @pytest.mark.django_db
 class TestResendActivationEmail:
 
-    @patch("accounts.api.v1.views.EmailThread.start")
+    @patch(
+        "accounts.api.v1.views."
+        "send_email_resend_activation_email.apply_async"
+    )
     def test_resend_activation_successfully(
         self,
         mock_start,
         api_client,
         user,
     ):
-
-        data = {
-            "email": user.email,
-        }
+        """کاربر تأیید نشده → ایمیل ارسال می‌شود."""
+        data = {"email": user.email}
 
         url = reverse("accounts:accounts-api-v1:resend_activation")
 
         response = api_client.post(url, data)
 
         assert response.status_code == 200
-
-        assert response.data["detail"] == ("email has been sent successfully")
-
+        assert response.data["detail"] == (
+            "If the account exists and is not verified, "
+            "an activation email has been sent."
+        )
         mock_start.assert_called_once()
 
-    def test_resend_activation_nonexistent_user(
+    @patch(
+        "accounts.api.v1.views."
+        "send_email_resend_activation_email.apply_async"
+    )
+    def test_resend_activation_verified_user(
         self,
+        mock_start,
         api_client,
+        verified_user,
     ):
-
-        data = {
-            "email": "doesnotexist@gmail.com",
-        }
+        """کاربر تأیید شده → ایمیلی ارسال نمی‌شود، پاسخ یکسان است."""
+        data = {"email": verified_user.email}
 
         url = reverse("accounts:accounts-api-v1:resend_activation")
 
         response = api_client.post(url, data)
 
-        assert response.status_code == 400
+        assert response.status_code == 200
+        assert response.data["detail"] == (
+            "If the account exists and is not verified, "
+            "an activation email has been sent."
+        )
+        mock_start.assert_not_called()
+
+    @patch(
+        "accounts.api.v1.views."
+        "send_email_resend_activation_email.apply_async"
+    )
+    def test_resend_activation_nonexistent_user(
+        self,
+        mock_start,
+        api_client,
+    ):
+        """کاربر ناموجود → پاسخ یکسان، بدون ارسال ایمیل."""
+        data = {"email": "doesnotexist@gmail.com"}
+
+        url = reverse("accounts:accounts-api-v1:resend_activation")
+
+        response = api_client.post(url, data)
+
+        assert response.status_code == 200
+        assert response.data["detail"] == (
+            "If the account exists and is not verified, "
+            "an activation email has been sent."
+        )
+        mock_start.assert_not_called()
 
 
 # =========================================================
@@ -606,58 +668,64 @@ class TestResendActivationEmail:
 @pytest.mark.django_db
 class TestResetPasswordEmail:
 
-    @patch("accounts.api.v1.views.EmailThread.start")
+    @patch("accounts.api.v1.views." "send_email_reset_password.apply_async")
     def test_reset_password_email_successfully(
         self,
         mock_start,
         api_client,
         verified_user,
     ):
-
-        data = {
-            "email": verified_user.email,
-        }
+        data = {"email": verified_user.email}
 
         url = reverse("accounts:accounts-api-v1:reset_password_email")
 
         response = api_client.post(url, data)
 
         assert response.status_code == 200
-
-        assert response.data["detail"] == ("email has been sent successfully")
-
+        assert response.data["detail"] == (
+            "If your account exists and is verified, "
+            "an email has been sent successfully."
+        )
         mock_start.assert_called_once()
 
+    @patch("accounts.api.v1.views." "send_email_reset_password.apply_async")
     def test_reset_password_email_unverified_user(
         self,
+        mock_start,
         api_client,
         user,
     ):
-
-        data = {
-            "email": user.email,
-        }
+        data = {"email": user.email}
 
         url = reverse("accounts:accounts-api-v1:reset_password_email")
 
         response = api_client.post(url, data)
 
-        assert response.status_code == 401
+        assert response.status_code == 200
+        assert response.data["detail"] == (
+            "If your account exists and is verified, "
+            "an email has been sent successfully."
+        )
+        mock_start.assert_not_called()
 
+    @patch("accounts.api.v1.views." "send_email_reset_password.apply_async")
     def test_reset_password_email_nonexistent_user(
         self,
+        mock_start,
         api_client,
     ):
-
-        data = {
-            "email": "doesnotexist@gmail.com",
-        }
+        data = {"email": "doesnotexist@gmail.com"}
 
         url = reverse("accounts:accounts-api-v1:reset_password_email")
 
         response = api_client.post(url, data)
 
-        assert response.status_code == 400
+        assert response.status_code == 200
+        assert response.data["detail"] == (
+            "If your account exists and is verified, "
+            "an email has been sent successfully."
+        )
+        mock_start.assert_not_called()
 
 
 # =========================================================
@@ -750,6 +818,7 @@ class TestResetPasswordView:
     ):
 
         refresh = RefreshToken.for_user(user)
+
         token = str(refresh.access_token)
 
         data = {

@@ -17,6 +17,9 @@ class CategorySerializer(serializers.ModelSerializer):
 class CommentSerializer(serializers.ModelSerializer):
     comment_children_url = serializers.SerializerMethodField()
     comment_parent_url = serializers.SerializerMethodField()
+    post = serializers.PrimaryKeyRelatedField(
+        queryset=Post.objects.filter(status=True)
+    )
 
     class Meta:
         model = Comment

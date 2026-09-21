@@ -9,7 +9,7 @@ from accounts.api.v1.serializers import (
     ChangePasswordSerializer,
     ProfileSerializer,
     ResendActivationSerializer,
-    ResetPasswordEmaiSerializer,
+    ResetPasswordEmailSerializer,
     ResetPasswordViewSerializer,
 )
 from rest_framework.exceptions import AuthenticationFailed
@@ -456,17 +456,7 @@ class TestResendActivationSerializer:
         serializer = ResendActivationSerializer(data=data)
 
         assert serializer.is_valid() is True
-        assert serializer.validated_data["user"] == user
-
-    def test_user_does_not_exist(self):
-        data = {
-            "email": "notexist@gmail.com",
-        }
-
-        serializer = ResendActivationSerializer(data=data)
-
-        assert serializer.is_valid() is False
-        assert "detail" in serializer.errors
+        assert serializer.validated_data["email"] == "test@gmail.com"
 
     def test_email_is_required(self):
         serializer = ResendActivationSerializer(data={})
@@ -476,35 +466,25 @@ class TestResendActivationSerializer:
 
 
 # =========================================================
-# ResetPasswordEmaiSerializer
+# ResetPasswordEmailSerializer
 # =========================================================
 
 
 @pytest.mark.django_db
-class TestResetPasswordEmaiSerializer:
+class TestResetPasswordEmailSerializer:
 
     def test_valid_email(self, user):
         data = {
             "email": "test@gmail.com",
         }
 
-        serializer = ResetPasswordEmaiSerializer(data=data)
+        serializer = ResetPasswordEmailSerializer(data=data)
 
         assert serializer.is_valid() is True
-        assert serializer.validated_data["user"] == user
-
-    def test_user_does_not_exist(self):
-        data = {
-            "email": "notexist@gmail.com",
-        }
-
-        serializer = ResetPasswordEmaiSerializer(data=data)
-
-        assert serializer.is_valid() is False
-        assert "detail" in serializer.errors
+        assert serializer.validated_data["email"] == "test@gmail.com"
 
     def test_email_is_required(self):
-        serializer = ResetPasswordEmaiSerializer(data={})
+        serializer = ResetPasswordEmailSerializer(data={})
 
         assert serializer.is_valid() is False
         assert "email" in serializer.errors

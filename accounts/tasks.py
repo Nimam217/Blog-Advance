@@ -1,6 +1,9 @@
 from celery import shared_task
 from mail_templated import EmailMessage
 from accounts.models import User
+from blog.models import Post
+from datetime import timedelta
+from django.utils import timezone
 
 
 @shared_task(
@@ -50,3 +53,16 @@ def send_email_register_activation(token, user_id):
         [user.email],
     )
     message.send()
+
+
+@shared_task(
+    autoretry_for=(ConnectionError,),
+    retry_backoff=True,
+    retry_kwargs={"max_retries": 5},
+)
+def delete_old_posts():
+    old_posts = Post.objects.filter(
+        updated_at__lte=timezone.now() - timedelta(days=365)
+    )
+    for post in old_posts:
+        post.delete()

@@ -33,8 +33,13 @@ class TestCategoryAPI:
         response = self.client.get(self.url)
 
         assert response.status_code == 200
-        assert len(response.data) == 1
-        assert response.data[0] == {
+
+        # ساختار paginated
+        assert response.data["total_category"] == 1
+        assert response.data["total_page"] == 1
+        assert len(response.data["results"]) == 1
+
+        assert response.data["results"][0] == {
             "id": self.category.id,
             "name": "Django",
         }

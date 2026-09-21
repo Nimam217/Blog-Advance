@@ -1,8 +1,9 @@
 {% extends "base.html" %}
 
 {% block content %}
-<!-- POST -->
+
 <article>
+
     <h1>{{ post.title }}</h1>
 
     {% if post.image %}
@@ -19,14 +20,15 @@
     <small>
         {{ post.created_at }}
     </small>
+
 </article>
 
 
 <hr>
 
 
-<!-- COMMENTS -->
 <section>
+
     <h2>Comments</h2>
 
     {% for comment in comments %}
@@ -45,11 +47,12 @@
 <hr>
 
 
-<!-- CREATE COMMENT -->
 <section>
+
     <h3>Add Comment</h3>
 
     <form method="post">
+
         {% csrf_token %}
 
         <input
@@ -63,9 +66,9 @@
         <button type="submit">
             Add Comment
         </button>
+
     </form>
 
 </section>
-
 
 {% endblock %}

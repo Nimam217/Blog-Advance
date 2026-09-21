@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     "rest_framework.authtoken",
     "rest_framework_simplejwt",
     "mail_templated",
+    "django_celery_beat",
 ]
 
 MIDDLEWARE = [
@@ -170,5 +171,13 @@ EMAIL_HOST_PASSWORD = ""  # SMTP server password
 EMAIL_USE_TLS = False
 
 
-# celery
+# Celery
 CELERY_BROKER_URL = "redis://redis:6379/1"
+
+# Redis Caches
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": "redis://redis:6379/0",
+    }
+}

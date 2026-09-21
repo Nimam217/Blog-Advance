@@ -42,7 +42,7 @@ class RegisterView(generics.GenericAPIView):
             data = {"email": email}
             user = get_object_or_404(User, email=email)
             access = AccessToken.for_user(user)
-            token = str(access.access)
+            token = str(access)
 
             send_email_register_activation.apply_async(
                 args=[token, user.id],
@@ -174,18 +174,18 @@ class ActivationView(APIView):
 class ResendActivationEmail(generics.GenericAPIView):
     serializer_class = ResendActivationSerializer
 
-    def post(
-        self,
-        request,
-        *args,
-        **kwargs,
-    ):
+    def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        user = serializer.validated_data["user"]
-        if user and not user.is_verified:
+
+        user = User.objects.filter(
+            email=serializer.validated_data["email"],
+            is_verified=False,
+        ).first()
+
+        if user:
             access = AccessToken.for_user(user)
-            token = str(access.access)
+            token = str(access)
             send_email_resend_activation_email.apply_async(
                 args=[token, user.id],
                 expires=60,
@@ -198,29 +198,30 @@ class ResendActivationEmail(generics.GenericAPIView):
                 },
             )
 
-            return Response(
-                {
-                    "detail": "If the account exists and is not verified, "
-                    "an activation email has been sent.",
-                },
-            )
+        return Response(
+            {
+                "detail": "If the account exists and is not verified, "
+                "an activation email has been sent.",
+            },
+            status=status.HTTP_200_OK,
+        )
 
 
 class ResetPasswordEmail(generics.GenericAPIView):
     serializer_class = ResetPasswordEmailSerializer
 
-    def post(
-        self,
-        request,
-        *args,
-        **kwargs,
-    ):
+    def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        user = User.objects.get(email=serializer.validated_data["email"])
+
+        user = User.objects.filter(
+            email=serializer.validated_data["email"],
+            is_verified=True,
+        ).first()
+
         if user:
             access = AccessToken.for_user(user)
-            token = str(access.access)
+            token = str(access)
             send_email_reset_password.apply_async(
                 args=[token, user.id],
                 expires=60,
@@ -233,12 +234,13 @@ class ResetPasswordEmail(generics.GenericAPIView):
                 },
             )
 
-            return Response(
-                {
-                    "detail": "if your account exist ,"
-                    "email has been sent successfully"
-                },
-            )
+        return Response(
+            {
+                "detail": "If your account exists and is verified, "
+                "an email has been sent successfully.",
+            },
+            status=status.HTTP_200_OK,
+        )
 
 
 class ResetPasswordView(generics.GenericAPIView):

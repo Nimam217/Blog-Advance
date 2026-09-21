@@ -1,15 +1,15 @@
 from rest_framework.permissions import (
     IsAuthenticated,
-
 )
 
 from rest_framework import viewsets
-
+from django.core.cache import cache
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import (
     OrderingFilter,
     SearchFilter,
 )
+from rest_framework.response import Response
 
 from .permissions import IsOwnerOrReadOnly, IsAdminOrReadOnly
 from .serializers import (
@@ -24,7 +24,11 @@ from ...models import (
     Comment,
 )
 
-from .paginations import DefaultPagination, DefaultPaginationComments
+from .paginations import (
+    DefaultPagination,
+    DefaultPaginationComments,
+    DefaultPaginationCategory,
+)
 
 
 class PostModelViewSet(viewsets.ModelViewSet):
@@ -58,6 +62,44 @@ class PostModelViewSet(viewsets.ModelViewSet):
 
     pagination_class = DefaultPagination
 
+    def list(self, request, *args, **kwargs):
+        query_params = request.query_params.urlencode()
+        cache_key = f"post_list:{query_params}"
+
+        cache_data = cache.get(cache_key)
+
+        queryset = self.filter_queryset(self.get_queryset())
+
+        page = self.paginate_queryset(queryset)
+
+        if page is not None:
+
+            if cache_data is not None:
+                return self.get_paginated_response(cache_data)
+
+            serializer = self.get_serializer(page, many=True)
+
+            cache.set(
+                cache_key,
+                serializer.data,
+                timeout=20 * 60,
+            )
+
+            return self.get_paginated_response(serializer.data)
+
+        if cache_data is not None:
+            return Response(cache_data)
+
+        serializer = self.get_serializer(queryset, many=True)
+
+        cache.set(
+            cache_key,
+            serializer.data,
+            timeout=20 * 60,
+        )
+
+        return Response(serializer.data)
+
 
 class CategoryModelViewSet(viewsets.ModelViewSet):
     queryset = Category.objects.all()
@@ -67,6 +109,26 @@ class CategoryModelViewSet(viewsets.ModelViewSet):
     ]
 
     serializer_class = CategorySerializer
+    pagination_class = DefaultPaginationCategory
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+        page_number = request.query_params.get("page", 1)
+        cache_key = f"category_list:{page_number}"
+        cache_data = cache.get(cache_key)
+
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            if cache_data is not None:
+                return self.get_paginated_response(cache_data)
+            serializer = self.get_serializer(page, many=True)
+            cache.set(cache_key, serializer.data, timeout=20 * 60)
+            return self.get_paginated_response(serializer.data)
+        if cache_data is not None:
+            return Response(cache_data)
+        serializer = self.get_serializer(queryset, many=True)
+        cache.set(cache_key, serializer.data, timeout=20 * 60)
+        return Response(serializer.data)
 
 
 class CommentModelViewSet(viewsets.ModelViewSet):
@@ -74,7 +136,7 @@ class CommentModelViewSet(viewsets.ModelViewSet):
         "author",
         "post",
         "parent",
-    )
+    ).filter(post__status=True)
 
     serializer_class = CommentSerializer
 
