@@ -73,7 +73,7 @@ class CommentSerializer(serializers.ModelSerializer):
 
     def get_comment_parent_url(self, obj):
         request = self.context.get("request")
-        if not obj.parent_id:
+        if not obj.parent_id or obj.status is not True:
             return None
         return request.build_absolute_uri(
             f"/blog/api/v1/comment/{obj.parent_id}/"

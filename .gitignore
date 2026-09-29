@@ -11,3 +11,5 @@ postgres_data/
 .bin
 venv/
 staticfiles/
+.coverage
+.vscode
