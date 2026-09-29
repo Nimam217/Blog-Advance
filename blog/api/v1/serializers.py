@@ -111,7 +111,7 @@ class PostSerializer(serializers.ModelSerializer):
 
         return [
             request.build_absolute_uri(f"/blog/api/v1/comment/{comment.id}/")
-            for comment in obj.comments.all()
+            for comment in obj.comments.filter(status=True)
         ]
 
     def to_representation(self, instance):

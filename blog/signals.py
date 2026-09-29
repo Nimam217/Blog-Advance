@@ -17,6 +17,14 @@ def delete_cache_after_change_post_list(sender, instance, **kwargs):
     # delete render post list cache
     for key in redis.scan_iter(match=pattern_2):
         redis.delete(key)
+    patterns = [
+        "*:post_list:*",
+        "*:1:views.decorators.cache.*",
+    ]
+
+    for pattern in patterns:
+        for key in redis.scan_iter(match=pattern):
+            redis.delete(key)
 
 
 @receiver([post_save, post_delete], sender=Category)
