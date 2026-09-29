@@ -2,19 +2,41 @@ name: Django Test
 
 on:
   push:
-    branches: [ "master" ]
+    branches: ["master"]
+
   pull_request:
-    branches: [ "master" ]
+    branches: ["master"]
 
 jobs:
-
-  build:
-
+  test:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
-    - name: docker compose
-      run: docker compose up -d
-    - name: run test
-      run: docker compose exec backend sh -c "flake8 . && pytest ."
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Start Docker Compose
+        run: docker compose up -d
+
+      - name: Wait for services
+        run: sleep 10
+
+      - name: Check containers
+        run: docker compose ps
+
+      - name: Django check
+        run: docker compose exec -T backend python manage.py check
+
+      - name: Run flake8
+        run: docker compose exec -T backend flake8 .
+
+      - name: Run tests
+        run: docker compose exec -T backend pytest . -vv
+
+      - name: Logs on failure
+        if: failure()
+        run: docker compose logs --tail=200
+
+      - name: Cleanup
+        if: always()
+        run: docker compose down
