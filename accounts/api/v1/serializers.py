@@ -128,36 +128,9 @@ class ProfileSerializer(serializers.ModelSerializer):
 class ResendActivationSerializer(serializers.Serializer):
     email = serializers.CharField(required=True)
 
-    def validate(self, data):
 
-        email = data.get("email")
-        try:
-            user = User.objects.get(email=email)
-
-        except User.DoesNotExist:
-            raise serializers.ValidationError(
-                {"detail": "User does not exist"}
-            )
-
-        data["user"] = user
-
-        return super().validate(data)
-
-
-class ResetPasswordEmaiSerializer(serializers.Serializer):
+class ResetPasswordEmailSerializer(serializers.Serializer):
     email = serializers.CharField(required=True)
-
-    def validate(self, data):
-        email = data.get("email")
-        try:
-            user = User.objects.get(email=email)
-        except User.DoesNotExist:
-            raise serializers.ValidationError(
-                {"detail": "User does not exist"}
-            )
-
-        data["user"] = user
-        return super().validate(data)
 
 
 class ResetPasswordViewSerializer(serializers.ModelSerializer):

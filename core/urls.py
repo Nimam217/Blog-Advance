@@ -17,7 +17,7 @@ Including another URLconf
 
 from django.contrib import admin
 from django.urls import path, include
-from core import settings
+from core.settings import base
 from django.conf.urls.static import static
 from rest_framework import permissions
 from drf_yasg.views import get_schema_view
@@ -66,10 +66,6 @@ urlpatterns = [
     ),
 ]
 
-if settings.DEBUG:
-    urlpatterns += static(
-        settings.STATIC_URL, document_root=settings.STATIC_ROOT
-    )
-    urlpatterns += static(
-        settings.MEDIA_URL, document_root=settings.MEDIA_ROOT
-    )
+if base.DEBUG:
+    urlpatterns += static(base.STATIC_URL, document_root=base.STATIC_ROOT)
+    urlpatterns += static(base.MEDIA_URL, document_root=base.MEDIA_ROOT)

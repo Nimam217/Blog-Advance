@@ -14,3 +14,9 @@ class Profile(models.Model):
     )
     create_date = models.DateTimeField(auto_now_add=True)
     update_date = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.user.email
+
+    def get_full_name(self):
+        return f"{self.first_name} {self.last_name}"

@@ -14,16 +14,20 @@ from accounts.api.v1.serializers import (
     ChangePasswordSerializer,
     ProfileSerializer,
     ResendActivationSerializer,
-    ResetPasswordEmaiSerializer,
     ResetPasswordViewSerializer,
+    ResetPasswordEmailSerializer,
 )
-from mail_templated import EmailMessage
-from .utils import EmailThread
-from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.tokens import AccessToken
+
 from rest_framework_simplejwt.exceptions import AuthenticationFailed
 import jwt
-from core import settings
+from django.conf import settings
 from .permissions import IsOwnerAndIsVerified
+from ...tasks import (
+    send_email_reset_password,
+    send_email_resend_activation_email,
+    send_email_register_activation,
+)
 
 
 class RegisterView(generics.GenericAPIView):
@@ -37,22 +41,22 @@ class RegisterView(generics.GenericAPIView):
             email = serializer.validated_data["email"]
             data = {"email": email}
             user = get_object_or_404(User, email=email)
-            token = self.get_tokens_for_user(user)
-            message = EmailMessage(
-                "email/activation_email.tpl",
-                {"token": token},
-                "admin@gmail.com",
-                [email],
+            access = AccessToken.for_user(user)
+            token = str(access)
+
+            send_email_register_activation.apply_async(
+                args=[token, user.id],
+                expires=60,
+                retry=True,
+                retry_policy={
+                    "max_retries": 3,
+                    "interval_start": 1,
+                    "interval_step": 2,
+                    "interval_max": 10,
+                },
             )
-            EmailThread(message).start()
             return Response(data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-    def get_tokens_for_user(self, user):
-        if not user.is_active:
-            raise AuthenticationFailed("User is not active")
-        refresh = RefreshToken.for_user(user)
-        return str(refresh.access_token)
 
 
 class CustomAuthToken(ObtainAuthToken):
@@ -170,65 +174,73 @@ class ActivationView(APIView):
 class ResendActivationEmail(generics.GenericAPIView):
     serializer_class = ResendActivationSerializer
 
-    def post(
-        self,
-        request,
-        *args,
-        **kwargs,
-    ):
+    def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        user = serializer.validated_data["user"]
-        token = self.get_tokens_for_user(user)
-        message = EmailMessage(
-            "email/activation_email.tpl",
-            {"token": token},
-            "admin@gmail.com",
-            [user.email],
-        )
-        EmailThread(message).start()
+
+        user = User.objects.filter(
+            email=serializer.validated_data["email"],
+            is_verified=False,
+        ).first()
+
+        if user:
+            access = AccessToken.for_user(user)
+            token = str(access)
+            send_email_resend_activation_email.apply_async(
+                args=[token, user.id],
+                expires=60,
+                retry=True,
+                retry_policy={
+                    "max_retries": 3,
+                    "interval_start": 1,
+                    "interval_step": 2,
+                    "interval_max": 10,
+                },
+            )
+
         return Response(
-            {"detail": "email has been sent successfully"},
+            {
+                "detail": "If the account exists and is not verified, "
+                "an activation email has been sent.",
+            },
             status=status.HTTP_200_OK,
         )
 
-    def get_tokens_for_user(self, user):
-        if not user.is_active:
-            raise AuthenticationFailed("User is not active")
-        refresh = RefreshToken.for_user(user)
-        return str(refresh.access_token)
 
+class ResetPasswordEmail(generics.GenericAPIView):
+    serializer_class = ResetPasswordEmailSerializer
 
-class ResetPasswordEmai(generics.GenericAPIView):
-    serializer_class = ResetPasswordEmaiSerializer
-
-    def post(
-        self,
-        request,
-        *args,
-        **kwargs,
-    ):
+    def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        user = serializer.validated_data["user"]
-        token = self.get_tokens_for_user(user)
-        message = EmailMessage(
-            template_name="email/reset_password_email.tpl",
-            context={"token": token, "user": user},
-            from_email="admin@gmail.com",
-            to=[user.email],
-        )
-        EmailThread(message).start()
+
+        user = User.objects.filter(
+            email=serializer.validated_data["email"],
+            is_verified=True,
+        ).first()
+
+        if user:
+            access = AccessToken.for_user(user)
+            token = str(access)
+            send_email_reset_password.apply_async(
+                args=[token, user.id],
+                expires=60,
+                retry=True,
+                retry_policy={
+                    "max_retries": 3,
+                    "interval_start": 1,
+                    "interval_step": 2,
+                    "interval_max": 10,
+                },
+            )
+
         return Response(
-            {"detail": "email has been sent successfully"},
+            {
+                "detail": "If your account exists and is verified, "
+                "an email has been sent successfully.",
+            },
             status=status.HTTP_200_OK,
         )
-
-    def get_tokens_for_user(self, user):
-        if not user.is_verified:
-            raise AuthenticationFailed("User is not verified")
-        refresh = RefreshToken.for_user(user)
-        return str(refresh.access_token)
 
 
 class ResetPasswordView(generics.GenericAPIView):

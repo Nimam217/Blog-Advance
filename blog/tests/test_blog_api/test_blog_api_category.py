@@ -1,326 +1,201 @@
 import pytest
-
-from django.urls import reverse
 from rest_framework.test import APIClient
 
 from accounts.models import User
 from blog.models import Category
 
 
-@pytest.fixture
-def api_client():
-    return APIClient()
-
-
-@pytest.fixture
-def category_user(db):
-    return User.objects.create_user(
-        email="category_user@gmail.com",
-        password="@Asdf123",
-    )
-
-
-@pytest.fixture
-def category(db):
-    return Category.objects.create(
-        name="test category",
-    )
-
-
 @pytest.mark.django_db
 class TestCategoryAPI:
+    @pytest.fixture(autouse=True)
+    def setup(self):
+        self.client = APIClient()
 
-    # -------------------------
-    # LIST
-    # -------------------------
-
-    def test_category_list_anonymous(
-        self,
-        api_client,
-        category,
-    ):
-        url = reverse("blog:api_v1:category-list")
-
-        response = api_client.get(url)
-
-        assert response.status_code == 200
-
-    def test_category_list_authenticated(
-        self,
-        api_client,
-        category_user,
-        category,
-    ):
-        api_client.force_authenticate(user=category_user)
-
-        url = reverse("blog:api_v1:category-list")
-
-        response = api_client.get(url)
-
-        assert response.status_code == 200
-
-    # -------------------------
-    # RETRIEVE
-    # -------------------------
-
-    def test_category_detail_anonymous(
-        self,
-        api_client,
-        category,
-    ):
-        url = reverse(
-            "blog:api_v1:category-detail",
-            kwargs={"pk": category.pk},
+        self.user = User.objects.create_user(
+            email="category@gmail.com",
+            password="@ASDf123",
         )
 
-        response = api_client.get(url)
+        self.admin = User.objects.create_superuser(
+            email="admin@gmail.com",
+            password="@ASDf123",
+        )
+
+        self.category = Category.objects.create(
+            name="Django",
+        )
+
+        self.url = "/blog/api/v1/category/"
+
+    def test_category_list_successfully(self):
+        self.client.force_authenticate(user=self.user)
+
+        response = self.client.get(self.url)
 
         assert response.status_code == 200
 
-    def test_category_detail_not_found(
-        self,
-        api_client,
-    ):
-        url = reverse(
-            "blog:api_v1:category-detail",
-            kwargs={"pk": 999999},
-        )
+        # ساختار paginated
+        assert response.data["total_category"] == 1
+        assert response.data["total_page"] == 1
+        assert len(response.data["results"]) == 1
 
-        response = api_client.get(url)
-
-        assert response.status_code == 404
-
-    # -------------------------
-    # CREATE
-    # -------------------------
-
-    def test_category_create_authenticated(
-        self,
-        api_client,
-        category_user,
-    ):
-        api_client.force_authenticate(user=category_user)
-
-        url = reverse("blog:api_v1:category-list")
-
-        data = {
-            "name": "new category",
+        assert response.data["results"][0] == {
+            "id": self.category.id,
+            "name": "Django",
         }
 
-        response = api_client.post(
-            url,
-            data,
+    def test_category_detail_successfully(self):
+        self.client.force_authenticate(user=self.user)
+
+        url = f"{self.url}{self.category.id}/"
+
+        response = self.client.get(url)
+
+        assert response.status_code == 200
+
+        assert response.data["id"] == self.category.id
+        assert response.data["name"] == "Django"
+
+    # -------------------------
+    # POST - NOT AUTHENTICATED
+    # -------------------------
+
+    def test_category_create_not_authenticated(self):
+        response = self.client.post(
+            self.url,
+            {"name": "Python"},
+            format="json",
+        )
+
+        assert response.status_code == 401
+
+        assert not Category.objects.filter(name="Python").exists()
+
+    # -------------------------
+    # POST - AUTHENTICATED USER
+    # -------------------------
+
+    def test_category_create_authenticated_user(self):
+        self.client.force_authenticate(user=self.user)
+
+        response = self.client.post(
+            self.url,
+            {"name": "Python"},
+            format="json",
+        )
+
+        assert response.status_code == 403
+
+        assert not Category.objects.filter(name="Python").exists()
+
+    # -------------------------
+    # POST - ADMIN
+    # -------------------------
+
+    def test_category_create_admin(self):
+        self.client.force_authenticate(user=self.admin)
+
+        response = self.client.post(
+            self.url,
+            {"name": "Python"},
+            format="json",
         )
 
         assert response.status_code == 201
 
-        assert Category.objects.filter(name="new category").exists()
+        assert Category.objects.filter(name="Python").exists()
 
-    def test_category_create_anonymous(
-        self,
-        api_client,
-    ):
-        url = reverse("blog:api_v1:category-list")
-
-        data = {
-            "name": "anonymous category",
-        }
-
-        response = api_client.post(
-            url,
-            data,
-        )
-
-        assert response.status_code == 401
-
-        assert not Category.objects.filter(name="anonymous category").exists()
-
-    def test_category_create_invalid_data(
-        self,
-        api_client,
-        category_user,
-    ):
-        api_client.force_authenticate(user=category_user)
-
-        url = reverse("blog:api_v1:category-list")
-
-        data = {
-            "name": "",
-        }
-
-        response = api_client.post(
-            url,
-            data,
-        )
-
-        assert response.status_code == 400
+        assert response.data["name"] == "Python"
 
     # -------------------------
-    # UPDATE
+    # PUT - ADMIN
     # -------------------------
 
-    def test_category_update_authenticated(
-        self,
-        api_client,
-        category_user,
-        category,
-    ):
-        api_client.force_authenticate(user=category_user)
+    def test_category_update_admin(self):
+        self.client.force_authenticate(user=self.admin)
 
-        url = reverse(
-            "blog:api_v1:category-detail",
-            kwargs={"pk": category.pk},
-        )
+        url = f"{self.url}{self.category.id}/"
 
-        data = {
-            "name": "updated category",
-        }
-
-        response = api_client.put(
+        response = self.client.put(
             url,
-            data,
+            {"name": "Django REST Framework"},
+            format="json",
         )
 
         assert response.status_code == 200
 
-        category.refresh_from_db()
+        self.category.refresh_from_db()
 
-        assert category.name == "updated category"
+        assert self.category.name == "Django REST Framework"
 
-    def test_category_partial_update_authenticated(
-        self,
-        api_client,
-        category_user,
-        category,
-    ):
-        api_client.force_authenticate(user=category_user)
+    # -------------------------
+    # PATCH - ADMIN
+    # -------------------------
 
-        url = reverse(
-            "blog:api_v1:category-detail",
-            kwargs={"pk": category.pk},
-        )
+    def test_category_partial_update_admin(self):
+        self.client.force_authenticate(user=self.admin)
 
-        data = {
-            "name": "patched category",
-        }
+        url = f"{self.url}{self.category.id}/"
 
-        response = api_client.patch(
+        response = self.client.patch(
             url,
-            data,
+            {"name": "DRF"},
+            format="json",
         )
 
         assert response.status_code == 200
 
-        category.refresh_from_db()
+        self.category.refresh_from_db()
 
-        assert category.name == "patched category"
-
-    def test_category_update_anonymous(
-        self,
-        api_client,
-        category,
-    ):
-        url = reverse(
-            "blog:api_v1:category-detail",
-            kwargs={"pk": category.pk},
-        )
-
-        data = {
-            "name": "anonymous update",
-        }
-
-        response = api_client.put(
-            url,
-            data,
-        )
-
-        assert response.status_code == 401
-
-        category.refresh_from_db()
-
-        assert category.name != "anonymous update"
-
-    def test_category_update_invalid_data(
-        self,
-        api_client,
-        category_user,
-        category,
-    ):
-        api_client.force_authenticate(user=category_user)
-
-        old_name = category.name
-
-        url = reverse(
-            "blog:api_v1:category-detail",
-            kwargs={"pk": category.pk},
-        )
-
-        data = {
-            "name": "",
-        }
-
-        response = api_client.put(
-            url,
-            data,
-        )
-
-        assert response.status_code == 400
-
-        category.refresh_from_db()
-
-        assert category.name == old_name
+        assert self.category.name == "DRF"
 
     # -------------------------
-    # DELETE
+    # PUT - NORMAL USER
     # -------------------------
 
-    def test_category_delete_authenticated(
-        self,
-        api_client,
-        category_user,
-        category,
-    ):
-        api_client.force_authenticate(user=category_user)
+    def test_category_update_normal_user(self):
+        self.client.force_authenticate(user=self.user)
 
-        url = reverse(
-            "blog:api_v1:category-detail",
-            kwargs={"pk": category.pk},
+        url = f"{self.url}{self.category.id}/"
+
+        response = self.client.put(
+            url,
+            {"name": "Hacked"},
+            format="json",
         )
 
-        response = api_client.delete(url)
+        assert response.status_code == 403
+
+        self.category.refresh_from_db()
+
+        assert self.category.name == "Django"
+
+    # -------------------------
+    # DELETE - ADMIN
+    # -------------------------
+
+    def test_category_delete_admin(self):
+        self.client.force_authenticate(user=self.admin)
+
+        url = f"{self.url}{self.category.id}/"
+
+        response = self.client.delete(url)
 
         assert response.status_code == 204
 
-        assert not Category.objects.filter(pk=category.pk).exists()
+        assert not Category.objects.filter(id=self.category.id).exists()
 
-    def test_category_delete_anonymous(
-        self,
-        api_client,
-        category,
-    ):
-        url = reverse(
-            "blog:api_v1:category-detail",
-            kwargs={"pk": category.pk},
-        )
+    # -------------------------
+    # DELETE - NORMAL USER
+    # -------------------------
 
-        response = api_client.delete(url)
+    def test_category_delete_normal_user(self):
+        self.client.force_authenticate(user=self.user)
 
-        assert response.status_code == 401
+        url = f"{self.url}{self.category.id}/"
 
-        assert Category.objects.filter(pk=category.pk).exists()
+        response = self.client.delete(url)
 
-    def test_category_delete_not_found(
-        self,
-        api_client,
-        category_user,
-    ):
-        api_client.force_authenticate(user=category_user)
+        assert response.status_code == 403
 
-        url = reverse(
-            "blog:api_v1:category-detail",
-            kwargs={"pk": 999999},
-        )
-
-        response = api_client.delete(url)
-
-        assert response.status_code == 404
+        assert Category.objects.filter(id=self.category.id).exists()

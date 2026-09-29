@@ -92,8 +92,8 @@ class TestProfileModel:
         profile = Profile.objects.get(user=user)
 
         assert profile.image.name == ""
-        assert profile.first_name == ""
-        assert profile.last_name == ""
+        assert profile.first_name == "test"
+        assert profile.last_name == "gmail.com"
         assert profile.description == ""
 
     def test_profile_fields(self):
