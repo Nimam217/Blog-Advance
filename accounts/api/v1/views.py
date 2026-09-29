@@ -21,7 +21,7 @@ from rest_framework_simplejwt.tokens import AccessToken
 
 from rest_framework_simplejwt.exceptions import AuthenticationFailed
 import jwt
-from core import settings
+from django.conf import settings
 from .permissions import IsOwnerAndIsVerified
 from ...tasks import (
     send_email_reset_password,

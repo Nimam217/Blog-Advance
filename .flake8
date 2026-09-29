@@ -11,6 +11,6 @@ exclude =
     __init__.py
     __initial__.py
     accounts/migrations
-    core/settings.py
+    core/settings/
     accounts/apps.py
     blog/apps.py

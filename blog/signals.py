@@ -9,10 +9,13 @@ from .models import Category, Post
 def delete_cache_after_change_post_list(sender, instance, **kwargs):
     redis = get_redis_connection("default")
 
-    pattern = "*:post_list:*"
-
-    for key in redis.scan_iter(match=pattern):
-        print("DELETING:", key)
+    pattern_1 = "*:post_list:*"
+    pattern_2 = "*:1:views.decorators.cache.*"
+    # delete api post list cache
+    for key in redis.scan_iter(match=pattern_1):
+        redis.delete(key)
+    # delete render post list cache
+    for key in redis.scan_iter(match=pattern_2):
         redis.delete(key)
 
 

@@ -1,9 +1,9 @@
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Prefetch
 from django.shortcuts import render, get_object_or_404, redirect
+from django.urls import reverse_lazy, reverse
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
-from django.urls import reverse_lazy, reverse
 from django.views.generic import (
     ListView,
     CreateView,
@@ -12,13 +12,12 @@ from django.views.generic import (
 )
 from django.views import View
 
-from accounts.models import Profile
 from blog.models import Post, Comment
 from .forms import PostForm, CommentForm
 
 
 # Post List
-@method_decorator(cache_page(20 * 60), name="dispatch")
+@method_decorator(cache_page(timeout=60 * 20), name="dispatch")
 class PostListView(ListView):
     context_object_name = "posts"
     template_name = "blog/post_list.html"
@@ -37,21 +36,30 @@ class PostDetailView(LoginRequiredMixin, View):
 
     def get_comments(self, post):
         return (
-            post.comments.filter(parent=None, status=True)
+            post.comments.filter(
+                parent=None,
+                status=True,
+            )
             .select_related("author")
             .prefetch_related(
                 Prefetch(
                     "replies",
-                    queryset=Comment.objects.select_related("author").order_by(
-                        "created_at"
-                    ),
+                    queryset=Comment.objects.filter(
+                        status=True,
+                    )
+                    .select_related("author")
+                    .order_by("created_at"),
                 )
             )
             .order_by("created_at")
         )
 
     def get(self, request, pk, *args, **kwargs):
-        post = get_object_or_404(Post, pk=pk)
+        post = get_object_or_404(
+            Post,
+            pk=pk,
+            status=True,
+        )
 
         comments = self.get_comments(post)
 
@@ -68,7 +76,11 @@ class PostDetailView(LoginRequiredMixin, View):
         )
 
     def post(self, request, pk, *args, **kwargs):
-        post = get_object_or_404(Post, pk=pk)
+        post = get_object_or_404(
+            Post,
+            pk=pk,
+            status=True,
+        )
 
         action = request.POST.get("action")
 
@@ -82,7 +94,6 @@ class PostDetailView(LoginRequiredMixin, View):
                 comment.author = request.user.profile
                 comment.post = post
                 comment.name = comment.author.get_full_name()
-
                 parent_id = request.POST.get("parent")
 
                 if parent_id:
@@ -91,6 +102,7 @@ class PostDetailView(LoginRequiredMixin, View):
                         pk=parent_id,
                         post=post,
                         parent=None,
+                        status=True,
                     )
 
                 comment.save()
@@ -167,8 +179,7 @@ class PostCreateView(LoginRequiredMixin, CreateView):
     success_url = reverse_lazy("blog:post-list")
 
     def form_valid(self, form):
-        profile = Profile.objects.get(user=self.request.user)
-        form.instance.author = profile
+        form.instance.author = self.request.user.profile
 
         return super().form_valid(form)
 
