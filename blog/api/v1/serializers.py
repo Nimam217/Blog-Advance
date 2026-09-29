@@ -68,7 +68,7 @@ class CommentSerializer(serializers.ModelSerializer):
         request = self.context.get("request")
         return [
             (request.build_absolute_uri(f"/blog/api/v1/comment/{comment.id}/"))
-            for comment in obj.replies.all()
+            for comment in obj.replies.filter(status=True)
         ]
 
     def get_comment_parent_url(self, obj):
@@ -111,7 +111,7 @@ class PostSerializer(serializers.ModelSerializer):
 
         return [
             request.build_absolute_uri(f"/blog/api/v1/comment/{comment.id}/")
-            for comment in obj.comments.all()
+            for comment in obj.comments.filter(status=True)
         ]
 
     def to_representation(self, instance):

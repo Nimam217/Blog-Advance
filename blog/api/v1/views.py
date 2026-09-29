@@ -136,7 +136,7 @@ class CommentModelViewSet(viewsets.ModelViewSet):
         "author",
         "post",
         "parent",
-    ).filter(post__status=True)
+    ).filter(post__status=True,status=True)
 
     serializer_class = CommentSerializer
 
