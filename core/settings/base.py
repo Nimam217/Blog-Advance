@@ -31,7 +31,6 @@ INSTALLED_APPS = [
     "rest_framework_simplejwt",
     "mail_templated",
     "django_celery_beat",
-
 ]
 
 
