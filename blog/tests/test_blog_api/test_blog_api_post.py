@@ -102,7 +102,6 @@ def another_comment(another_profile, my_post):
         author=another_profile,
         post=my_post,
         status=True,
-
     )
 
 

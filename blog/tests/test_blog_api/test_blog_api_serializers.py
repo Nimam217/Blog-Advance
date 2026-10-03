@@ -75,7 +75,6 @@ def comment(profile, post):
         author=profile,
         post=post,
         status=True,
-
     )
 
 
@@ -87,7 +86,6 @@ def reply(another_profile, post, comment):
         post=post,
         parent=comment,
         status=True,
-
     )
 
 

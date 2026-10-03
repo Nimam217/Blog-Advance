@@ -91,7 +91,6 @@ def another_comment(another_profile, my_post):
         author=another_profile,
         post=my_post,
         status=True,
-
     )
 
 
@@ -103,7 +102,6 @@ def reply_comment(another_profile, my_post, my_comment):
         post=my_post,
         parent=my_comment,
         status=True,
-
     )
 
 
@@ -293,7 +291,6 @@ class TestCommentAPI:
         comment = Comment.objects.get(content="author test")
 
         assert comment.author == my_profile
-
 
     # =========================================================
     # PARENT / REPLY
@@ -596,8 +593,6 @@ class TestCommentAPI:
 
         assert len(data) == 1
         assert data[0]["id"] == my_comment.pk
-
-
 
     # =========================================================
     # ORDERING
