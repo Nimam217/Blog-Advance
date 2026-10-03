@@ -47,7 +47,8 @@ class TestBlogView(TestCase):
             status=True,
         )
 
-        cls.comment = Comment.objects.create(            content="test comment",
+        cls.comment = Comment.objects.create(
+            content="test comment",
             author=cls.profile,
             post=cls.post,
             status=True,
@@ -395,8 +396,6 @@ class TestBlogView(TestCase):
             comment.post,
             self.post,
         )
-
-
 
         self.assertIsNone(
             comment.parent,

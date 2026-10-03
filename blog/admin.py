@@ -33,7 +33,7 @@ class CommentAdmin(admin.ModelAdmin):
     )
     ordering = ("-created_at",)
     search_fields = ("author", "name", "post")
-    list_filter = ("status", "author", "parent", "post","created_at")
+    list_filter = ("status", "author", "parent", "post", "created_at")
 
 
 admin.site.register(Post, PostAdmin)
