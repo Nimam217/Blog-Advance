@@ -25,7 +25,6 @@ class CommentSerializer(serializers.ModelSerializer):
         model = Comment
         fields = [
             "id",
-            "name",
             "content",
             "author",
             "post",
@@ -38,7 +37,6 @@ class CommentSerializer(serializers.ModelSerializer):
 
         read_only_fields = [
             "id",
-            "name",
             "author",
             "created_at",
             "updated_at",
@@ -60,7 +58,6 @@ class CommentSerializer(serializers.ModelSerializer):
         profile = Profile.objects.get(user=self.context["request"].user)
 
         validated_data["author"] = profile
-        validated_data["name"] = profile.get_full_name()
 
         return super().create(validated_data)
 

@@ -47,16 +47,13 @@ class TestBlogView(TestCase):
             status=True,
         )
 
-        cls.comment = Comment.objects.create(
-            name=cls.profile.get_full_name(),
-            content="test comment",
+        cls.comment = Comment.objects.create(            content="test comment",
             author=cls.profile,
             post=cls.post,
             status=True,
         )
 
         cls.reply = Comment.objects.create(
-            name=cls.other_profile.get_full_name(),
             content="test reply",
             author=cls.other_profile,
             post=cls.post,
@@ -399,10 +396,7 @@ class TestBlogView(TestCase):
             self.post,
         )
 
-        self.assertEqual(
-            comment.name,
-            self.profile.get_full_name(),
-        )
+
 
         self.assertIsNone(
             comment.parent,

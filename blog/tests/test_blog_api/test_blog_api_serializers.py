@@ -71,7 +71,6 @@ def another_post(another_profile, another_category):
 @pytest.fixture
 def comment(profile, post):
     return Comment.objects.create(
-        name="Test User",
         content="Test comment",
         author=profile,
         post=post,
@@ -83,7 +82,6 @@ def comment(profile, post):
 @pytest.fixture
 def reply(another_profile, post, comment):
     return Comment.objects.create(
-        name="Another User",
         content="Test reply",
         author=another_profile,
         post=post,
@@ -311,7 +309,6 @@ class TestCommentSerializer:
         assert comment.content == "New comment"
         assert comment.post == post
         assert comment.author == profile
-        assert comment.name == profile.get_full_name()
 
     def test_comment_serializer_invalid_parent_post(
         self,
@@ -344,7 +341,6 @@ class TestCommentSerializer:
         api_request,
     ):
         data = {
-            "name": "Changed Name",
             "author": comment.author.id,
             "created_at": comment.created_at,
             "updated_at": comment.updated_at,
@@ -363,6 +359,5 @@ class TestCommentSerializer:
 
         updated_comment = serializer.save()
 
-        assert updated_comment.name == comment.name
         assert updated_comment.author == comment.author
         assert updated_comment.content == "Updated content"

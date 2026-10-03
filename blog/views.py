@@ -93,7 +93,6 @@ class PostDetailView(LoginRequiredMixin, View):
 
                 comment.author = request.user.profile
                 comment.post = post
-                comment.name = comment.author.get_full_name()
                 parent_id = request.POST.get("parent")
 
                 if parent_id:

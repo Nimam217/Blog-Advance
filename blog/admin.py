@@ -24,7 +24,6 @@ class CategoryAdmin(admin.ModelAdmin):
 
 class CommentAdmin(admin.ModelAdmin):
     list_display = (
-        "name",
         "author",
         "status",
         "created_at",
@@ -34,7 +33,7 @@ class CommentAdmin(admin.ModelAdmin):
     )
     ordering = ("-created_at",)
     search_fields = ("author", "name", "post")
-    list_filter = ("status", "author", "parent", "post")
+    list_filter = ("status", "author", "parent", "post","created_at")
 
 
 admin.site.register(Post, PostAdmin)
