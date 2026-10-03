@@ -91,6 +91,7 @@ def my_comment(my_profile, my_post):
         name=my_profile.get_full_name(),
         content="test comment",
         author=my_profile,
+        status=True,
         post=my_post,
     )
 
@@ -102,6 +103,8 @@ def another_comment(another_profile, my_post):
         content="another comment",
         author=another_profile,
         post=my_post,
+        status=True,
+
     )
 
 

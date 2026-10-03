@@ -81,6 +81,7 @@ def my_comment(my_profile, my_post):
         content="test comment",
         author=my_profile,
         post=my_post,
+        status=True,
     )
 
 
@@ -91,6 +92,8 @@ def another_comment(another_profile, my_post):
         content="another comment",
         author=another_profile,
         post=my_post,
+        status=True,
+
     )
 
 
@@ -102,6 +105,8 @@ def reply_comment(another_profile, my_post, my_comment):
         author=another_profile,
         post=my_post,
         parent=my_comment,
+        status=True,
+
     )
 
 
