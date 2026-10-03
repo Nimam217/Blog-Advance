@@ -88,7 +88,6 @@ def inactive_post(my_profile, my_category):
 @pytest.fixture
 def my_comment(my_profile, my_post):
     return Comment.objects.create(
-        name=my_profile.get_full_name(),
         content="test comment",
         author=my_profile,
         status=True,
@@ -99,7 +98,6 @@ def my_comment(my_profile, my_post):
 @pytest.fixture
 def another_comment(another_profile, my_post):
     return Comment.objects.create(
-        name=another_profile.get_full_name(),
         content="another comment",
         author=another_profile,
         post=my_post,

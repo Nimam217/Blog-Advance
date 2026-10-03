@@ -51,7 +51,6 @@ class Command(BaseCommand):
                     content=self.fake.paragraph(nb_sentences=3),
                     post=post,
                     status=random.choice([True, False]),
-                    name=profile.get_full_name(),
                 )
 
                 create_reply = random.choice([True, False])
@@ -63,5 +62,4 @@ class Command(BaseCommand):
                         post=post,
                         parent=comment,
                         status=random.choice([True, False]),
-                        name=profile.get_full_name(),
                     )

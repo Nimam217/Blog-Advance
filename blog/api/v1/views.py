@@ -159,7 +159,8 @@ class CommentModelViewSet(viewsets.ModelViewSet):
 
     search_fields = [
         "content",
-        "name",
+        "author__first_name",
+        "author__last_name",
     ]
 
     ordering_fields = [

@@ -77,7 +77,6 @@ def another_post(another_profile, another_category):
 @pytest.fixture
 def my_comment(my_profile, my_post):
     return Comment.objects.create(
-        name=my_profile.get_full_name(),
         content="test comment",
         author=my_profile,
         post=my_post,
@@ -88,7 +87,6 @@ def my_comment(my_profile, my_post):
 @pytest.fixture
 def another_comment(another_profile, my_post):
     return Comment.objects.create(
-        name=another_profile.get_full_name(),
         content="another comment",
         author=another_profile,
         post=my_post,
@@ -100,7 +98,6 @@ def another_comment(another_profile, my_post):
 @pytest.fixture
 def reply_comment(another_profile, my_post, my_comment):
     return Comment.objects.create(
-        name=another_profile.get_full_name(),
         content="test reply",
         author=another_profile,
         post=my_post,
@@ -297,31 +294,6 @@ class TestCommentAPI:
 
         assert comment.author == my_profile
 
-    def test_comment_name_is_set_automatically(
-        self,
-        api_client,
-        my_user,
-        my_profile,
-        my_post,
-    ):
-        api_client.force_authenticate(user=my_user)
-
-        url = reverse("blog:api_v1:comment-api-list")
-
-        response = api_client.post(
-            url,
-            {
-                "content": "name test",
-                "post": my_post.pk,
-            },
-            format="json",
-        )
-
-        assert response.status_code == 201
-
-        comment = Comment.objects.get(content="name test")
-
-        assert comment.name == my_profile.get_full_name()
 
     # =========================================================
     # PARENT / REPLY
@@ -530,7 +502,6 @@ class TestCommentAPI:
         another_profile,
     ):
         Comment.objects.create(
-            name=another_profile.get_full_name(),
             content="another post comment",
             author=another_profile,
             post=another_post,
@@ -626,27 +597,7 @@ class TestCommentAPI:
         assert len(data) == 1
         assert data[0]["id"] == my_comment.pk
 
-    def test_search_by_name(
-        self,
-        api_client,
-        my_user,
-        my_comment,
-        another_comment,
-    ):
-        api_client.force_authenticate(user=my_user)
 
-        url = reverse("blog:api_v1:comment-api-list")
-
-        response = api_client.get(
-            url,
-            {"search": my_comment.name},
-        )
-
-        assert response.status_code == 200
-
-        data = response.data["results"]
-
-        assert len(data) >= 1
 
     # =========================================================
     # ORDERING

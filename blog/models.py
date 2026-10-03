@@ -32,7 +32,6 @@ class Category(models.Model):
 
 
 class Comment(models.Model):
-    name = models.CharField(max_length=100)
     content = models.TextField()
     author = models.ForeignKey(
         "accounts.Profile",
@@ -53,4 +52,4 @@ class Comment(models.Model):
     status = models.BooleanField(default=False)
 
     def __str__(self):
-        return self.name
+        return self.author.get_full_name()

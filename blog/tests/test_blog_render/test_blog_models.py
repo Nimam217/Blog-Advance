@@ -39,7 +39,6 @@ class TestBlogModels(TestCase):
 
     def test_comment_model(self):
         comment = Comment.objects.create(
-            name=self.profile.get_full_name(),
             content="test content",
             author=self.profile,
             post=self.post,
@@ -48,14 +47,12 @@ class TestBlogModels(TestCase):
 
     def test_create_reply(self):
         comment = Comment.objects.create(
-            name=self.profile.get_full_name(),
             content="Parent comment",
             author=self.profile,
             post=self.post,
         )
 
         reply = Comment.objects.create(
-            name=self.profile.get_full_name(),
             content="Reply comment",
             author=self.profile,
             post=self.post,
@@ -67,14 +64,12 @@ class TestBlogModels(TestCase):
 
     def test_replies_relation(self):
         comment = Comment.objects.create(
-            name=self.profile.get_full_name(),
             content="Parent comment",
             author=self.profile,
             post=self.post,
         )
 
         reply = Comment.objects.create(
-            name=self.profile.get_full_name(),
             content="Reply comment",
             author=self.profile,
             post=self.post,
@@ -85,7 +80,6 @@ class TestBlogModels(TestCase):
 
     def test_comment_without_parent_is_main_comment(self):
         comment = Comment.objects.create(
-            name=self.profile.get_full_name(),
             content="Main comment",
             author=self.profile,
             post=self.post,
